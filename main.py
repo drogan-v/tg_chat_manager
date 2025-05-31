@@ -1,6 +1,8 @@
+from dotenv import load_dotenv
+import os
 import logging
 
-from telegram import Update
+from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 
@@ -28,12 +30,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 def main() -> None:
-    app = Application.builder().token("").build()
+    load_dotenv()
+    print(os.getenv("TOKEN"))
+    app = Application.builder().token(os.getenv("TOKEN")).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
 
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
