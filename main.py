@@ -3,10 +3,9 @@ import os
 import logging
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, filters, MessageHandler
 
 from handlers import handlers
-
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -24,7 +23,7 @@ def main() -> None:
 
     app.add_handler(CommandHandler("start", handlers.start))
     app.add_handler(CommandHandler("help", handlers.help_command))
-
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.validate))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
