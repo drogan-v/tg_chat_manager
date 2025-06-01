@@ -5,7 +5,9 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, filters, MessageHandler
 
-from handlers import handlers
+from handlers.handlers import BotHandlers
+from services.firebase import FirebaseService
+from services.llm import LLMService
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -19,13 +21,18 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     load_dotenv()
     print(os.getenv("TOKEN"))
+
+    firebase_service = FirebaseService('tg-chat-manager-60bdc-firebase-adminsdk-fbsvc-0fbdd3f567.json',
+                               os.getenv('FIREBASE_DB_URL'))
+    firebase_service.initialize()
+    llm_service = LLMService()
+
     app = Application.builder().token(os.getenv("TOKEN")).build()
 
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handlers.user_auth))
-    app.add_handler(CommandHandler("start", handlers.start))
-    app.add_handler(CommandHandler("help", handlers.help_command))
+    bot_handlers = BotHandlers(firebase_service=firebase_service, llm_service=llm_service)
+    for handler in bot_handlers.get_handlers():
+        app.add_handler(handler)
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.validate))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 

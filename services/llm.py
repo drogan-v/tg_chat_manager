@@ -1,13 +1,20 @@
 from together import Together
 
+import logging
 import dotenv
 import os
 
+logger = logging.getLogger(__name__)
 
-class LLMClient:
+class LLMService:
     def __init__(self) -> None:
-        dotenv.load_dotenv()
-        self.client = Together(api_key=os.getenv('LLM_API_KEY'))
+        try:
+            dotenv.load_dotenv()
+            self.client = Together(api_key=os.getenv('LLM_API_KEY'))
+            logger.info("LLM initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize LLm: {e}")
+            raise
 
     def validate_message(self, message: str) -> str:
         response = self.client.chat.completions.create(
