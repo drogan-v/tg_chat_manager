@@ -22,6 +22,7 @@ class BotAuthHandlers:
         for member in update.message.new_chat_members:
             user_id = member.id
             chat_id = update.message.chat.id
+            self.firebase_service.unban_user(chat_id, user_id)
             if not self.firebase_service.has_user_verified(user_id):
                 self.firebase_service.mark_chat_as_unavailable(chat_id, user_id)
                 await self.set_user_permissions(context, chat_id, user_id, False)
@@ -38,7 +39,7 @@ class BotAuthHandlers:
 
         user_id = user.id
 
-        self.firebase_service.mark_user_as_verified(user_id)
+        self.firebase_service.mark_user_as_verified(user_id, user.username)
         chats = self.firebase_service.get_unavailable_chat(user_id)
         for chat_id in chats.values():
             await self.set_user_permissions(context, chat_id, user_id, True)

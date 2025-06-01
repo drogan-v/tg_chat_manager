@@ -22,11 +22,11 @@ class FirebaseService():
             logger.error(f"Failed to initialize Firebase: {e}")
             raise
 
-    def mark_user_as_verified(self, user_id: int) -> None:
+    def mark_user_as_verified(self, user_id: int, username: str) -> None:
         """Marks a user as verified in the Firebase database."""
         try:
             ref = db.reference(f'users/{user_id}')
-            ref.set({'verified': True})
+            ref.set({username: user_id})
         except Exception as e:
             logger.error(f"Firebase error in mark_user_messaged: {e}")
 
@@ -65,6 +65,22 @@ class FirebaseService():
         except Exception as e:
             logger.error(f"Firebase error in mark_chat_as_available: {e}")
 
+    def get_user_by_username(self, username: str) -> dict | None:
+        """Gets a user's data from the Firebase database by their username."""
+        try:
+            ref = db.reference(f'users')
+            data = ref.get()
+            if data is None:
+                return None
+
+            for user_id, user_data in data.items():
+                if username in user_data:
+                    return {'user_id': user_id, 'username': username}
+
+            return None
+        except Exception as e:
+            logger.error(f"Firebase error in get_user_by_username: {e}")
+
     def ban_user(self, chat_id: int, user_id: int) -> None:
         """Bans a user from accessing the bot for a specific chat in the Firebase database."""
         try:
@@ -72,3 +88,11 @@ class FirebaseService():
             ref.set(True)
         except Exception as e:
             logger.error(f"Firebase error in ban_user: {e}")
+
+    def unban_user(self, chat_id: int, user_id: int) -> None:
+        """Unbans a user from accessing the bot for a specific chat in the Firebase database."""
+        try:
+            ref = db.reference(f'banned_users/{chat_id}/{user_id}')
+            ref.delete()
+        except Exception as e:
+            logger.error(f"Firebase error in unban_user: {e}")
