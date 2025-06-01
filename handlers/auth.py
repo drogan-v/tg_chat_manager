@@ -26,8 +26,10 @@ class BotAuthHandlers:
                 self.firebase_service.mark_chat_as_unavailable(chat_id, user_id)
                 await self.set_user_permissions(context, chat_id, user_id, False)
                 await context.bot.send_message(chat_id=update.message.chat_id,
-                                               text=f"Привет, @{member.username}, чтобы писать в группу, нажми сюда:\n"
-                                                    "https://t.me/tmp_tg_chat_manager_bot?start=access")
+                                               text=(
+                                                   f"Привет, @{member.username}, чтобы писать в группу, "
+                                                   f"<a href='https://t.me/tmp_tg_chat_manager_bot?start=access'>нажми сюда</a>."
+                                               ), parse_mode="HTML")
 
     async def verify_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
