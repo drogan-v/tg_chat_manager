@@ -21,8 +21,10 @@ def main() -> None:
     print(os.getenv("TOKEN"))
     app = Application.builder().token(os.getenv("TOKEN")).build()
 
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handlers.user_auth))
     app.add_handler(CommandHandler("start", handlers.start))
     app.add_handler(CommandHandler("help", handlers.help_command))
+
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.validate))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 

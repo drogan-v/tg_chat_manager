@@ -3,6 +3,13 @@ from telegram.ext import ContextTypes
 from services.llm import LLMClient
 
 
+async def user_auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Authorize user that entered the group"""
+    for member in update.message.new_chat_members:
+        await context.bot.send_message(chat_id=member.id, text="Добро пожаловать! Чтобы пользоваться чатом, напишите мне что-нибудь.")
+
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
@@ -20,10 +27,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def validate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Validate the message sent by the user."""
     llm_response = LLMClient().validate_message(update.message.text)
-    print(llm_response.split())
-    status, reason = llm_response.split()
+    status, reason = llm_response.split()[0], ''.join(llm_response.split()[1:])
     if 'unsafe' in llm_response:
         await update.message.delete()
-        await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
         await context.bot.send_message(chat_id=update.message.from_user.id, text=f'Вы были забанены за сообщение: '
-                                                                                 f'{update.message.text}. Причина: {reason}')
+                                                                                 f'{update.message.text}.\n Причина: {reason}')
+        await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
