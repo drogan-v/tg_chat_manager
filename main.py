@@ -22,8 +22,8 @@ def main() -> None:
     load_dotenv()
     print(os.getenv("TOKEN"))
 
-    firebase_service = FirebaseService('tg-chat-manager-60bdc-firebase-adminsdk-fbsvc-0fbdd3f567.json',
-                               os.getenv('FIREBASE_DB_URL'))
+    firebase_service = FirebaseService('firebase_key.json',
+                                       os.getenv('FIREBASE_DB_URL'))
     firebase_service.initialize()
     llm_service = LLMService()
 

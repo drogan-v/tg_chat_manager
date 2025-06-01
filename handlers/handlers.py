@@ -33,6 +33,7 @@ class BotHandlers:
         if 'unsafe' in llm_response:
             self.firebase_service.ban_user(update.message.chat_id, update.message.from_user.id)
             await update.message.delete()
-            await context.bot.send_message(chat_id=update.message.chat_id, text=f'/ban @{update.message.from_user.username} {reason}')
+            await context.bot.send_message(chat_id=update.message.chat_id,
+                                           text=f'/ban @{update.message.from_user.username} {reason}')
             await context.bot.send_message(chat_id=update.message.from_user.id, text=f'Вы были забанены за сообщение: '
                                                                                      f'{update.message.text}\nПричина: {reason}')
