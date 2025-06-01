@@ -5,21 +5,21 @@ import os
 
 
 class LLMClient:
-    def __init__(self):
+    def __init__(self) -> None:
         dotenv.load_dotenv()
         self.client = Together(api_key=os.getenv('LLM_API_KEY'))
 
-    def validate_message(self, message):
-        print("Проверяем сообщение")
+    def validate_message(self, message: str) -> str:
         response = self.client.chat.completions.create(
-            model="lgai/exaone-3-5-32b-instruct",
+            model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
             messages=[
                 {
                     "role": "system",
-                    "content": "Твоя задача модерация введенного сообщения и его проверка на спам, ненормативную лексику, вредоносность и политику."
+                    "content": "Твоя задача модерация введенного сообщения и его проверка на спам, ненормативную лексику,"
+                               "оскорбления, религиозные риски, публичный вред, агрессию, вредоносность и политику."
                                "выводи ответ строго в этом формате:"
-                               "если прошло модерацию:Safe"
-                               "Если не прошло: Unsafe <Reason>, внутри скобок поясни причину."
+                               "если прошло модерацию: safe"
+                               "Если не прошло: unsafe Reason, вместо Reason напиши что именно не прошло модерацию."
                 },
                 {
                     "role": "user",
@@ -27,5 +27,5 @@ class LLMClient:
                 }
             ],
         )
-        print("Проверка прошла")
-        return response.choices[0].message.content
+        llm_response = response.choices[0].message.content
+        return llm_response
