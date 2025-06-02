@@ -3,7 +3,7 @@ import os
 import logging
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler, filters, MessageHandler
+from telegram.ext import Application
 
 from handlers.handlers import BotHandlers
 from services.firebase import FirebaseService
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     load_dotenv()
 
-    firebase_service = FirebaseService('firebase_key.json',
+    firebase_service = FirebaseService('secrets/firebase.json',
                                        os.getenv('FIREBASE_DB_URL'))
     firebase_service.initialize()
     llm_service = LLMService()

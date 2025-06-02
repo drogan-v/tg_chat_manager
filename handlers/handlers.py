@@ -1,4 +1,5 @@
-from telegram import Update, ChatPermissions
+from telegram import Update
+from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 from telegram.ext import CommandHandler, filters, MessageHandler
 
@@ -27,9 +28,9 @@ class BotHandlers:
 
     async def validate(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Validate the message sent by the user."""
-        status, reason = LLMClient().validate_message(update.message.text)
-        if 'unsafe' in llm_response:
-            self.firebase_service.ban_user(update.message.chat_id, update.message.from_user.id)
+        status, reason = self.llm_service.validate_message(update.message.text)
+        if 'unsafe' in status:
+            self.firebase_service.delete_user_from_chat(update.message.from_user.id, update.message.chat_id)
             await update.message.delete()
             await context.bot.send_message(chat_id=update.message.chat_id,
                                            text=f'/ban @{update.message.from_user.username} {reason}')
