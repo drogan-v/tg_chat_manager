@@ -1,6 +1,5 @@
 from telegram import Update, ChatPermissions
 from telegram.ext import ContextTypes
-
 from telegram.ext import CommandHandler, filters, MessageHandler
 
 from services.firebase import FirebaseService
@@ -28,8 +27,7 @@ class BotHandlers:
 
     async def validate(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Validate the message sent by the user."""
-        llm_response = self.llm_service.validate_message(update.message.text)
-        status, reason = llm_response.split()[0], ' '.join(llm_response.split()[1:])
+        status, reason = LLMClient().validate_message(update.message.text)
         if 'unsafe' in llm_response:
             self.firebase_service.ban_user(update.message.chat_id, update.message.from_user.id)
             await update.message.delete()
@@ -37,3 +35,8 @@ class BotHandlers:
                                            text=f'/ban @{update.message.from_user.username} {reason}')
             await context.bot.send_message(chat_id=update.message.from_user.id, text=f'Вы были забанены за сообщение: '
                                                                                      f'{update.message.text}\nПричина: {reason}')
+            try:
+                await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
+            except TelegramError:
+                # Значит, типок является админом
+                pass

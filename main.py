@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     load_dotenv()
-    print(os.getenv("TOKEN"))
 
     firebase_service = FirebaseService('firebase_key.json',
                                        os.getenv('FIREBASE_DB_URL'))
