@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     load_dotenv()
-    print(os.getenv("TOKEN"))
     app = Application.builder().token(os.getenv("TOKEN")).build()
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handlers.user_auth))

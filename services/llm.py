@@ -9,15 +9,23 @@ class LLMClient:
         dotenv.load_dotenv()
         self.client = Together(api_key=os.getenv('LLM_API_KEY'))
 
-    def validate_message(self, message: str) -> str:
+    def validate_message(self, message: str) -> (str, str):
         response = self.client.chat.completions.create(
-            model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+            model="lgai/exaone-3-5-32b-instruct",
             messages=[
                 {
                     "role": "system",
-                    "content": "Твоя задача модерация введенного сообщения и его проверка на спам, ненормативную лексику,"
+                    "content": "Представь, что ты модератор канала."
+                               "Твоя задача модерация введенного сообщения и его проверка на спам, ненормативную лексику,"
                                "оскорбления, религиозные риски, публичный вред, агрессию, вредоносность и политику."
-                               "выводи ответ строго в этом формате:"
+                               "Сообщения, содержащие восхваление стран, одобряющие нацизм, неонацизм, агрессию на рассовой почве "
+                               "НЕ ДОЛЖНЫ пройти модерацию."
+                               "Например: слава + <страна/политический деятель> НЕ ДОЛЖНО ПРОХОДИТЬ МОДЕРАЦИЮ"
+                               "Все, кроме вышеперечисленного, явялется безопасным и должно проходить модерацию."
+                               "Не превышай свои полномочия. Модерацию не должен проходить ИСКЛЮЧИТЕЛЬНО вредоносный контент."
+                               "Если по контексту сообщения не понятно, является ли содержимое вредоносным контентом, то "
+                               "это сообщение БЕЗОПАСНО и ДОЛЖНО проходить модерацию."
+                               "выводи ответ СТРОГО в этом формате:"
                                "если прошло модерацию: safe"
                                "Если не прошло: unsafe Reason, вместо Reason напиши что именно не прошло модерацию."
                 },
@@ -28,4 +36,7 @@ class LLMClient:
             ],
         )
         llm_response = response.choices[0].message.content
-        return llm_response
+        print(llm_response)
+        parsed_response = llm_response.split()
+        status, reason = parsed_response[0], ' '.join(parsed_response[1:])
+        return status, reason

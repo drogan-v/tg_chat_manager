@@ -1,5 +1,6 @@
 from telegram import ForceReply, Update
 from telegram.ext import ContextTypes
+from telegram.error import TelegramError
 from services.llm import LLMClient
 
 
@@ -26,10 +27,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def validate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Validate the message sent by the user."""
-    llm_response = LLMClient().validate_message(update.message.text)
-    status, reason = llm_response.split()[0], ''.join(llm_response.split()[1:])
-    if 'unsafe' in llm_response:
+    status, reason = LLMClient().validate_message(update.message.text)
+    if 'unsafe' in status:
         await update.message.delete()
         await context.bot.send_message(chat_id=update.message.from_user.id, text=f'Вы были забанены за сообщение: '
                                                                                  f'{update.message.text}.\n Причина: {reason}')
-        await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
+        try:
+            await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
+        except TelegramError:
+            # Значит, типок является админом
+            pass
