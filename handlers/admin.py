@@ -34,6 +34,7 @@ class Admin:
 
     async def ban_common(self, update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, reason: str,
                          duration: datetime = None, silent: bool = False, revoke: bool = False) -> None:
+        """Ban user from chat with optional duration, reason and silent mode."""
         if not await self.is_admin(update, context):
             await update.message.reply_text("Эта команда доступна только администраторам.")
             return
@@ -52,6 +53,7 @@ class Admin:
         await update.message.delete()
 
     async def ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Ban user from chat."""
         if update.message.reply_to_message:
             if len(context.args) != 1:
                 await update.message.reply_text("Формат команды: /ban <причина>\n"
@@ -71,6 +73,7 @@ class Admin:
             return
 
     async def temp_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Ban user from chat with duration."""
         if update.message.reply_to_message:
             if len(context.args) != 2:
                 await update.message.reply_text("Формат команды: /time_ban <время> <причина>\n"
@@ -105,6 +108,7 @@ class Admin:
             pass
 
     async def delete_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Ban user from chat with deleting messages."""
         if update.message.reply_to_message:
             if len(context.args) != 1:
                 await update.message.reply_text("Формат команды: /dban <причина>\n"
@@ -124,6 +128,7 @@ class Admin:
             return
 
     async def silent_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Ban user from chat with silent mode."""
         if update.message.reply_to_message:
             if len(context.args) != 1:
                 await update.message.reply_text("Формат команды: /sban <причина>\n"
@@ -144,6 +149,7 @@ class Admin:
 
     async def kick_common(self, update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, reason: str,
                           silent: bool = False, revoke: bool = False) -> None:
+        """Kick user from chat with silent or revoke mode."""
         if not await self.is_admin(update, context):
             await update.message.reply_text("Эта команда доступна только администраторам.")
             return
@@ -156,6 +162,7 @@ class Admin:
         await context.bot.unban_chat_member(chat_id=update.effective_chat.id, user_id=user.id)
 
     async def kick_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Kick user from chat."""
         if update.message.reply_to_message:
             if len(context.args) != 1:
                 await update.message.reply_text("Формат команды: /kick <причина>\n"
@@ -175,6 +182,7 @@ class Admin:
             return
 
     async def delete_kick_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Kick user from chat with deleting messages."""
         if update.message.reply_to_message:
             if len(context.args) != 1:
                 await update.message.reply_text("Формат команды: /dkick <причина>\n"
@@ -194,6 +202,7 @@ class Admin:
             return
 
     async def silent_kick_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Kick user from chat with silent mode."""
         if update.message.reply_to_message:
             if len(context.args) != 1:
                 await update.message.reply_text("Формат команды: /skick <причина>\n"
@@ -230,9 +239,13 @@ class Admin:
                                                )
 
     async def get_user_by_username(self, context: ContextTypes.DEFAULT_TYPE, username: str):
+        """Get user by username."""
         pass
 
     def parse_duration(self, s: str):
+        """
+        Parse duration string to seconds. Example: "1m", "2h", "3d" -> 60, 7200, 259200 seconds.
+        """
         match = re.match(r"(\d+)([mhd])", s)
         if not match:
             return None
