@@ -4,17 +4,20 @@ from telegram.ext import ContextTypes
 from telegram.ext import CommandHandler, filters, MessageHandler
 
 from services.llm import LLMService
+from handlers.admin import Admin
 
 
 class Bot:
     def __init__(self, llm_service: LLMService) -> None:
         self.llm_service = llm_service
+        self.admin = Admin()
 
     def handlers(self) -> list:
-        return [
-            CommandHandler("help", self.help_command),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate)
-        ]
+        handlers = [CommandHandler("help", self.help_command),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate)
+                    ]
+        handlers += self.admin.handlers()
+        return handlers
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Send a message when the command /help is issued."""
