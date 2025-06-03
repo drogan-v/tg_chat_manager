@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.error import TelegramError
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, BaseHandler
 from telegram.ext import CommandHandler, filters, MessageHandler
 
 from services import LLMService
@@ -12,7 +12,7 @@ class Bot:
         self.llm_service = llm_service
         self.admin = Admin()
 
-    def handlers(self) -> list:
+    def handlers(self) -> list[BaseHandler]:
         return [
             CommandHandler("help", self.help_command),
             MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
