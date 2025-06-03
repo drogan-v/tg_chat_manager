@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import re
 
-from telegram import Update, ChatPermissions
+from telegram import Update, ChatPermissions, User
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 from telegram.ext import CommandHandler, filters, MessageHandler
@@ -19,11 +19,12 @@ class Admin:
         return [
             CommandHandler("ban", self.ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
             CommandHandler("tban", self.temp_ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("dban", self.delete_ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("sban", self.silent_ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("kick", self.kick_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("dkick", self.delete_kick_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("skick", self.silent_kick_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
         ]
-
-    # async def unban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-    #     await context.bot.unban_chat_member(chat_id=update.effective_chat.id, user_id=7880380383, only_if_banned=True)
-    #     await context.bot.send_message(chat_id=7880380383, text="Unbanned!\n https://t.me/+KpZdeUAFU-UxNjcy")
 
     async def is_admin(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Check if the user that sent the message is an admin in the chat."""
@@ -31,10 +32,26 @@ class Admin:
         member = await update.effective_chat.get_member(user_id)
         return member.status in ['administrator', 'creator']
 
-    async def ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def ban_common(self, update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, reason: str,
+                         duration=None, silent=False, revoke=False):
         if not await self.is_admin(update, context):
             await update.message.reply_text("Эта команда доступна только администраторам.")
             return
+        log = {
+            "user_id": user.id,
+            "chat_id": update.effective_chat.id,
+            "reason": reason,
+            "message": update.message.reply_to_message.text,
+        }
+        await self.logs.awrite(FirebaseAction.BAN, dumps(log))
+        await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=user.id, until_date=duration,
+                                          revoke_messages=revoke)
+        if not silent:
+            await update.message.reply_text(f"{user.first_name} был заблокирован.\n"
+                                            f"Причина: {reason}.")
+        await update.message.delete()
+
+    async def ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message.reply_to_message:
             if len(context.args) != 1:
                 await update.message.reply_text("Формат команды: /ban <причина>\n"
@@ -42,29 +59,18 @@ class Admin:
                 return
             reason = context.args[0]
             user = update.message.reply_to_message.from_user
-            log = {
-                "user_id": user.id,
-                "chat_id": update.effective_chat.id,
-                "reason": reason,
-                "message": update.message.reply_to_message.text,
-            }
-            await self.logs.awrite(FirebaseAction.BAN, dumps(log))
-            await update.message.reply_text(f"{user.first_name} был заблокирован.\n"
-                                            f"Причина: {reason}.")
-            await update.effective_chat.ban_member(user.id)
-            await update.message.delete()
+            await self.ban_common(update, context, user, reason)
             return
         else:  #TODO: Бан пользователя по его никнейму
             if len(context.args) != 2:
                 await update.message.reply_text("Формат команды: /ban @<username> <причина>")
                 return
             username, reason = context.args[0].lstrip('@'), context.args[1]
-            pass
+            user = username
+            # await self.ban_common(update, context, user, reason)
+            return
 
     async def temp_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        if not await self.is_admin(update, context):
-            await update.message.reply_text("Эта команда доступна только администраторам.")
-            return
         if update.message.reply_to_message:
             if len(context.args) != 2:
                 await update.message.reply_text("Формат команды: /time_ban <время> <причина>\n"
@@ -80,25 +86,61 @@ class Admin:
             except:
                 await update.message.reply_text(f"Invalid duration format: {time_duration}")
                 return
-            log = {
-                "user_id": user.id,
-                "chat_id": update.effective_chat.id,
-                "reason": reason,
-                "message": update.message.reply_to_message.text,
-            }
-            await self.logs.awrite(FirebaseAction.BAN, dumps(log))
-            await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=user.id, until_date=until_date,
-                                              revoke_messages=False)
-            await update.message.reply_text(f"{user.first_name} был заблокирован на {time_duration}.\n"
-                                            f"Причина: {reason}.")
-            await update.message.delete()
+            await self.ban_common(update, context, user, reason, duration=until_date)
             return
         else:  #TODO: Временный бан пользователя по его никнейму
             if len(context.args) != 3:
                 await update.message.reply_text("Формат команды: /ban @<username> <причина>")
                 return
-            username, time, reason = context.args[0].lstrip('@'), context.args[1], context.args[2]
+            username, time_duration, reason = context.args[0].lstrip('@'), context.args[1], context.args[2]
+            try:
+                until_date = datetime.now(timezone.utc) + timedelta(
+                    seconds=self.parse_duration(time_duration)
+                )
+            except:
+                await update.message.reply_text(f"Invalid duration format: {time_duration}")
+                return
+            user = username
+            # await self.ban_common(update, context, user, reason, duration=until_date)
             pass
+
+    async def delete_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.message.reply_to_message:
+            if len(context.args) != 1:
+                await update.message.reply_text("Формат команды: /dban <причина>\n"
+                                                "Укажите пользователя для бана ответом на его сообщение.")
+                return
+            reason = context.args[0]
+            user = update.message.reply_to_message.from_user
+            await self.ban_common(update, context, user, reason, revoke=True)
+            return
+        else:  #TODO: Бан пользователя по его никнейму
+            if len(context.args) != 2:
+                await update.message.reply_text("Формат команды: /dban @<username> <причина>")
+                return
+            username, reason = context.args[0].lstrip('@'), context.args[1]
+            user = username
+            # await self.ban_common(update, context, user, reason, revoke=True)
+            return
+
+    async def silent_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.message.reply_to_message:
+            if len(context.args) != 1:
+                await update.message.reply_text("Формат команды: /sban <причина>\n"
+                                                "Укажите пользователя для бана ответом на его сообщение.")
+                return
+            reason = context.args[0]
+            user = update.message.reply_to_message.from_user
+            await self.ban_common(update, context, user, reason, silent=True)
+            return
+        else:  #TODO: Бан пользователя по его никнейму
+            if len(context.args) != 2:
+                await update.message.reply_text("Формат команды: /sban @<username> <причина>")
+                return
+            username, reason = context.args[0].lstrip('@'), context.args[1]
+            user = username
+            # await self.ban_common(update, context, user, reason, silent=True)
+            return
 
     async def set_user_permissions(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int, user_id: int,
                                    permission: bool) -> None:
@@ -116,6 +158,9 @@ class Admin:
                                                                            can_send_other_messages=permission,
                                                                            can_pin_messages=permission, )
                                                )
+
+    async def get_user_by_username(self, context: ContextTypes.DEFAULT_TYPE, username: str):
+        pass
 
     def parse_duration(self, s: str):
         match = re.match(r"(\d+)([mhd])", s)
