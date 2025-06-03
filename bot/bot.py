@@ -13,11 +13,11 @@ class Bot:
         self.admin = Admin()
 
     def handlers(self) -> list:
-        handlers = [CommandHandler("help", self.help_command),
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate)
-                    ]
-        handlers += self.admin.handlers()
-        return handlers
+        return [
+            CommandHandler("help", self.help_command),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
+            *self.admin.handlers(),
+        ]
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Send a message when the command /help is issued."""
