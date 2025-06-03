@@ -2,13 +2,11 @@ from dotenv import load_dotenv
 import os
 import logging
 
-import asyncio
 from telegram import Update
 from telegram.ext import Application
 
 from bot import Bot
 from services import LLMService, ConsoleLog, FirebaseLog
-from services.log import FirebaseAction
 
 
 def main() -> None:

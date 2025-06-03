@@ -22,6 +22,8 @@ class Log(Protocol):
 class FirebaseAction(Enum):
     BAN = "BAN"
     UNBAN = "UNBAN"
+    MUTE = "MUTE"
+    UNMUTE = "UNMUTE"
 
 
 class FirebaseLogFormat(BaseModel):
@@ -66,6 +68,10 @@ class FirebaseLog(Log):
                 data |= {"action": FirebaseAction.BAN.value}
             case FirebaseAction.UNBAN:
                 data |= {"action": FirebaseAction.UNBAN.value}
+            case FirebaseAction.MUTE:
+                data |= {"action": FirebaseAction.MUTE.value}
+            case FirebaseAction.UNMUTE:
+                data |= {"action": FirebaseAction.UNMUTE.value}
             case _:
                 raise RuntimeError(f"Unexpected Firebase Log Format: {status}")
 
@@ -96,6 +102,10 @@ class FirebaseLog(Log):
                 data |= {"action": FirebaseAction.BAN.value}
             case FirebaseAction.UNBAN:
                 data |= {"action": FirebaseAction.UNBAN.value}
+            case FirebaseAction.MUTE:
+                data |= {"action": FirebaseAction.MUTE.value}
+            case FirebaseAction.UNMUTE:
+                data |= {"action": FirebaseAction.UNMUTE.value}
             case _:
                 raise RuntimeError(f"Unexpected Firebase Log Format: {status}")
 

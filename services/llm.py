@@ -17,6 +17,7 @@ class LLMService:
             raise
 
     def validate_message(self, message: str) -> (str, str):
+        logger.info(f"НАЧАЛИ")
         response = self.client.chat.completions.create(
             model="lgai/exaone-3-5-32b-instruct",
             messages=[
@@ -46,4 +47,5 @@ class LLMService:
         logger.info(f"LLM response: {llm_response}")
         parsed_response = llm_response.split()
         status, reason = parsed_response[0], ' '.join(parsed_response[1:])
+        logger.info(f"ЗАКОНЧИЛИ")
         return status, reason
