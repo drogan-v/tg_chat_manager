@@ -3,8 +3,8 @@ from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 from telegram.ext import CommandHandler, filters, MessageHandler
 
-from services.llm import LLMService
-from handlers.admin import Admin
+from services import LLMService
+from handlers import Admin
 
 
 class Bot:
