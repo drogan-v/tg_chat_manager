@@ -33,7 +33,7 @@ class Admin:
         return member.status in ['administrator', 'creator']
 
     async def ban_common(self, update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, reason: str,
-                         duration=None, silent=False, revoke=False):
+                         duration: datetime = None, silent: bool = False, revoke: bool = False) -> None:
         if not await self.is_admin(update, context):
             await update.message.reply_text("Эта команда доступна только администраторам.")
             return
@@ -47,7 +47,7 @@ class Admin:
         await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=user.id, until_date=duration,
                                           revoke_messages=revoke)
         if not silent:
-            await update.message.reply_text(f"{user.first_name} был заблокирован.\n"
+            await update.message.reply_text(f"{user.first_name} был заблокирован{' на' + str(duration) if duration else ''}.\n"
                                             f"Причина: {reason}.")
         await update.message.delete()
 
@@ -66,7 +66,7 @@ class Admin:
                 await update.message.reply_text("Формат команды: /ban @<username> <причина>")
                 return
             username, reason = context.args[0].lstrip('@'), context.args[1]
-            user = username
+            user = await self.get_user_by_username(context, username)
             # await self.ban_common(update, context, user, reason)
             return
 
@@ -100,7 +100,7 @@ class Admin:
             except:
                 await update.message.reply_text(f"Invalid duration format: {time_duration}")
                 return
-            user = username
+            user = await self.get_user_by_username(context, username)
             # await self.ban_common(update, context, user, reason, duration=until_date)
             pass
 
@@ -119,7 +119,7 @@ class Admin:
                 await update.message.reply_text("Формат команды: /dban @<username> <причина>")
                 return
             username, reason = context.args[0].lstrip('@'), context.args[1]
-            user = username
+            user = await self.get_user_by_username(context, username)
             # await self.ban_common(update, context, user, reason, revoke=True)
             return
 
@@ -138,8 +138,78 @@ class Admin:
                 await update.message.reply_text("Формат команды: /sban @<username> <причина>")
                 return
             username, reason = context.args[0].lstrip('@'), context.args[1]
-            user = username
+            user = await self.get_user_by_username(context, username)
             # await self.ban_common(update, context, user, reason, silent=True)
+            return
+
+    async def kick_common(self, update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, reason: str,
+                          silent: bool = False, revoke: bool = False) -> None:
+        if not await self.is_admin(update, context):
+            await update.message.reply_text("Эта команда доступна только администраторам.")
+            return
+        await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=user.id,
+                                          revoke_messages=revoke)
+        if not silent:
+            await update.message.reply_text(f"{user.first_name} был кикнут.\n"
+                                            f"Причина: {reason}.")
+        await update.message.delete()
+        await context.bot.unban_chat_member(chat_id=update.effective_chat.id, user_id=user.id)
+
+    async def kick_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.message.reply_to_message:
+            if len(context.args) != 1:
+                await update.message.reply_text("Формат команды: /kick <причина>\n"
+                                                "Укажите пользователя для кика ответом на его сообщение.")
+                return
+            reason = context.args[0]
+            user = update.message.reply_to_message.from_user
+            await self.kick_common(update, context, user, reason)
+            return
+        else:
+            if len(context.args) != 2:
+                await update.message.reply_text("Формат команды: /kick @<username> <причина>")
+                return
+            username, reason = context.args[0].lstrip('@'), context.args[1]
+            user = await self.get_user_by_username(context, username)
+            # await self.kick_common(update, context, user, reason)
+            return
+
+    async def delete_kick_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.message.reply_to_message:
+            if len(context.args) != 1:
+                await update.message.reply_text("Формат команды: /dkick <причина>\n"
+                                                "Укажите пользователя для кика ответом на его сообщение.")
+                return
+            reason = context.args[0]
+            user = update.message.reply_to_message.from_user
+            await self.kick_common(update, context, user, reason, revoke=True)
+            return
+        else:
+            if len(context.args) != 2:
+                await update.message.reply_text("Формат команды: /dkick @<username> <причина>")
+                return
+            username, reason = context.args[0].lstrip('@'), context.args[1]
+            user = await self.get_user_by_username(context, username)
+            # await self.kick_common(update, context, user, reason, revoke=True)
+            return
+
+    async def silent_kick_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.message.reply_to_message:
+            if len(context.args) != 1:
+                await update.message.reply_text("Формат команды: /skick <причина>\n"
+                                                "Укажите пользователя для кика ответом на его сообщение.")
+                return
+            reason = context.args[0]
+            user = update.message.reply_to_message.from_user
+            await self.kick_common(update, context, user, reason, silent=True)
+            return
+        else:
+            if len(context.args) != 2:
+                await update.message.reply_text("Формат команды: /skick @<username> <причина>")
+                return
+            username, reason = context.args[0].lstrip('@'), context.args[1]
+            user = await self.get_user_by_username(context, username)
+            # await self.kick_common(update, context, user, reason, silent=True)
             return
 
     async def set_user_permissions(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int, user_id: int,
