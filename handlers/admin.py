@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta, timezone
+import re
+
 from telegram import Update, ChatPermissions
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
@@ -11,6 +14,7 @@ class Admin:
     def handlers(self) -> list:
         return [
             CommandHandler("ban", self.ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("tban", self.temp_ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
         ]
 
     # async def unban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -46,7 +50,7 @@ class Admin:
             username, reason = context.args[0].lstrip('@'), context.args[1]
             pass
 
-    async def time_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def temp_ban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self.is_admin(update, context):
             await update.message.reply_text("Эта команда доступна только администраторам.")
             return
@@ -55,13 +59,17 @@ class Admin:
                 await update.message.reply_text("Формат команды: /time_ban <время> <причина>\n"
                                                 "Укажите пользователя для временного бана ответом на его сообщение.")
                 return
-            time, reason = context.args[0], context.args[1]
+            time_duration, reason = context.args[0], context.args[1]
             user = update.message.reply_to_message.from_user
-            await update.message.reply_text(f"{user.first_name} был заблокирован на {time}.\n"
-                                            f"Причина: {reason}.")
-            # TODO: Джоба для селери по созданию временной разблокировки пользователя
-            await update.effective_chat.ban_member(user.id)
+            until_date = datetime.now(timezone.utc) + timedelta(
+                seconds=self.parse_duration(time_duration)
+            )
+            print(datetime.now(timezone.utc), until_date)
+            await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=user.id, until_date=until_date,
+                                              revoke_messages=False)
             await update.message.delete()
+            await update.message.reply_text(f"{user.first_name} был заблокирован на {time_duration}.\n"
+                                            f"Причина: {reason}.")
             return
         else:  #TODO: Временный бан пользователя по его никнейму
             if len(context.args) != 3:
@@ -86,3 +94,20 @@ class Admin:
                                                                            can_send_other_messages=permission,
                                                                            can_pin_messages=permission, )
                                                )
+
+    def parse_duration(self, s: str):
+        match = re.match(r"(\d+)([smhd])", s)
+        if not match:
+            return None
+
+        value, unit = match.groups()
+        value = int(value)
+        if unit == "s":
+            return value
+        elif unit == "m":
+            return value * 60
+        elif unit == "h":
+            return value * 60 * 60
+        elif unit == "d":
+            return value * 60 * 60 * 24
+        raise TelegramError(f"Invalid duration format: {s}")
