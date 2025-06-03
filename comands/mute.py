@@ -17,40 +17,6 @@ class Additions(Enum):
     TIMER= "TIMER"
 
 
-DisabledChatPermissions = ChatPermissions(
-    can_send_messages=False,
-    can_send_polls=False,
-    can_send_other_messages=False,
-    can_add_web_page_previews=False,
-    can_change_info=False,
-    can_invite_users=False,
-    can_pin_messages=False,
-    can_manage_topics=False,
-    can_send_audios=False,
-    can_send_documents=False,
-    can_send_photos=False,
-    can_send_videos=False,
-    can_send_video_notes=False,
-    can_send_voice_notes=False,
-)
-
-EnabledChatPermissions = ChatPermissions(
-    can_send_messages=True,
-    can_send_polls=True,
-    can_send_other_messages=True,
-    can_add_web_page_previews=True,
-    can_change_info=True,
-    can_invite_users=True,
-    can_pin_messages=True,
-    can_manage_topics=True,
-    can_send_audios=True,
-    can_send_documents=True,
-    can_send_photos=True,
-    can_send_videos=True,
-    can_send_video_notes=True,
-    can_send_voice_notes=True,
-)
-
 # TODO: ТУТ ЯВНОЕ ПОВТОРЕНИЕ КОДА. НУЖНО СДЕЛАТЬ ОБЩИЙ ИНТЕРФЕЙС КОМАНД И КОМПОЗИЦИЮ
 def parse_duration(s: str):
     match = re.match(r"(\d+)([mhd])", s)
@@ -126,10 +92,11 @@ class Mute:
             except TypeError:
                 return
 
+        # TODO: Нужно давать юзеру не все права, а только те, которые у него были
         await context.bot.restrict_chat_member(
             chat_id=update.effective_chat.id,
             user_id=update.message.reply_to_message.from_user.id,
-            permissions=DisabledChatPermissions if not self.invert else EnabledChatPermissions,
+            permissions=ChatPermissions.no_permissions() if not self.invert else ChatPermissions.all_permissions(),
             until_date=until_date if not self.invert else None,
         )
 
