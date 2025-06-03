@@ -5,10 +5,11 @@ from telegram import Update, ChatPermissions
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 from telegram.ext import CommandHandler, filters, MessageHandler
+from json import dumps
 
 from services import Log
 from services.log import FirebaseAction
-from json import dumps
+from comands import Mute
 
 
 class Admin:
@@ -19,6 +20,13 @@ class Admin:
         return [
             CommandHandler("ban", self.ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
             CommandHandler("tban", self.temp_ban_user, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("mute", Mute(self.logs), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("dmute", Mute(self.logs).with_delete(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("sdmute", Mute(self.logs).with_delete().with_silent(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("tmute", Mute(self.logs).with_timer(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("tdmute", Mute(self.logs).with_timer().with_delete(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("tsdmute", Mute(self.logs).with_timer().with_delete().with_silent(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("unmute", Mute(self.logs).with_invert(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
         ]
 
     # async def unban_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

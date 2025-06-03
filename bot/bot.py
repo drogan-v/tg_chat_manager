@@ -16,7 +16,8 @@ class Bot:
     def handlers(self) -> list[BaseHandler]:
         return [
             CommandHandler("help", self.help_command),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
+            # TODO: Решить проблему с беспконечным запросом в ллм из-за которого вся программа стопится
+            # MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
             *self.admin.handlers(),
         ]
 
