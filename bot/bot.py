@@ -6,11 +6,11 @@ from telegram.ext import CommandHandler, filters, MessageHandler
 from services.llm import LLMService
 
 
-class BotHandlers:
+class Bot:
     def __init__(self, llm_service: LLMService) -> None:
         self.llm_service = llm_service
 
-    def get_handlers(self) -> list:
+    def handlers(self) -> list:
         return [
             CommandHandler("help", self.help_command),
             MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate)

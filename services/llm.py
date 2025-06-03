@@ -43,7 +43,7 @@ class LLMService:
             ],
         )
         llm_response = response.choices[0].message.content
-        print(llm_response)
+        logger.info(f"LLM response: {llm_response}")
         parsed_response = llm_response.split()
         status, reason = parsed_response[0], ' '.join(parsed_response[1:])
         return status, reason

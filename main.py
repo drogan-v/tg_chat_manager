@@ -5,7 +5,7 @@ import logging
 from telegram import Update
 from telegram.ext import Application
 
-from handlers.handlers import BotHandlers
+from bot import Bot
 from services.llm import LLMService
 
 logging.basicConfig(
@@ -24,8 +24,8 @@ def main() -> None:
 
     app = Application.builder().token(os.getenv("TOKEN")).build()
 
-    bot_handlers = BotHandlers(llm_service=llm_service)
-    for handler in bot_handlers.get_handlers():
+    bot = Bot(llm_service=llm_service)
+    for handler in bot.handlers():
         app.add_handler(handler)
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
