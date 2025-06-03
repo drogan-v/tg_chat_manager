@@ -3,14 +3,15 @@ from telegram.error import TelegramError
 from telegram.ext import ContextTypes, BaseHandler
 from telegram.ext import CommandHandler, filters, MessageHandler
 
-from services import LLMService
+from services import LLMService, Log
 from handlers import Admin
 
 
 class Bot:
-    def __init__(self, llm_service: LLMService) -> None:
+    def __init__(self, llm_service: LLMService, logs: Log) -> None:
         self.llm_service = llm_service
-        self.admin = Admin()
+        self.logs = logs
+        self.admin = Admin(logs)
 
     def handlers(self) -> list[BaseHandler]:
         return [

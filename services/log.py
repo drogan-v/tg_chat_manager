@@ -28,6 +28,7 @@ class FirebaseLogFormat(BaseModel):
     """Firebase Realtime Log Formatter."""
     chat_id: int
     user_id: int
+    message: str
     reason: str
 
 
@@ -56,6 +57,7 @@ class FirebaseLog(Log):
         data = {
             "timestamp": timestamp,
             "user_id": log.user_id,
+            "message": log.message,
             "reason": log.reason,
         }
 
@@ -85,6 +87,7 @@ class FirebaseLog(Log):
         data = {
             "timestamp": timestamp,
             "user_id": log.user_id,
+            "message": log.message,
             "reason": log.reason,
         }
 

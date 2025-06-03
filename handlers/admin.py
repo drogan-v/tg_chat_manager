@@ -6,10 +6,14 @@ from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 from telegram.ext import CommandHandler, filters, MessageHandler
 
+from services import Log
+from services.log import FirebaseAction
+from json import dumps
+
 
 class Admin:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, logs: Log) -> None:
+        self.logs = logs
 
     def handlers(self) -> list:
         return [
@@ -38,6 +42,13 @@ class Admin:
                 return
             reason = context.args[0]
             user = update.message.reply_to_message.from_user
+            log = {
+                "user_id": user.id,
+                "chat_id": update.effective_chat.id,
+                "reason": reason,
+                "message": update.message.reply_to_message.text,
+            }
+            await self.logs.awrite(FirebaseAction.BAN, dumps(log))
             await update.message.reply_text(f"{user.first_name} был заблокирован.\n"
                                             f"Причина: {reason}.")
             await update.effective_chat.ban_member(user.id)
@@ -65,6 +76,13 @@ class Admin:
                 seconds=self.parse_duration(time_duration)
             )
             print(datetime.now(timezone.utc), until_date)
+            log = {
+                "user_id": user.id,
+                "chat_id": update.effective_chat.id,
+                "reason": reason,
+                "message": update.message.reply_to_message.text,
+            }
+            await self.logs.awrite(FirebaseAction.BAN, dumps(log))
             await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=user.id, until_date=until_date,
                                               revoke_messages=False)
             await update.message.delete()
