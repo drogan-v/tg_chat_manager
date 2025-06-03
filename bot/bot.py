@@ -1,19 +1,24 @@
 from telegram import Update
 from telegram.error import TelegramError
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, BaseHandler
 from telegram.ext import CommandHandler, filters, MessageHandler
 
-from services.llm import LLMService
+from services import LLMService, Log
+from handlers import Admin
 
 
 class Bot:
-    def __init__(self, llm_service: LLMService) -> None:
+    def __init__(self, llm_service: LLMService, logs: Log) -> None:
         self.llm_service = llm_service
+        self.logs = logs
+        self.admin = Admin(logs)
 
-    def handlers(self) -> list:
+    def handlers(self) -> list[BaseHandler]:
         return [
             CommandHandler("help", self.help_command),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate)
+            # TODO: Решить проблему с беспконечным запросом в ллм из-за которого вся программа стопится
+            # MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
+            *self.admin.handlers(),
         ]
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
