@@ -68,14 +68,18 @@ class Admin:
         if update.message.reply_to_message:
             if len(context.args) != 2:
                 await update.message.reply_text("Формат команды: /time_ban <время> <причина>\n"
+                                                "Формат времени: <число><символ>, например: 1m, 12h, 2d,\n"
                                                 "Укажите пользователя для временного бана ответом на его сообщение.")
                 return
             time_duration, reason = context.args[0], context.args[1]
             user = update.message.reply_to_message.from_user
-            until_date = datetime.now(timezone.utc) + timedelta(
-                seconds=self.parse_duration(time_duration)
-            )
-            print(datetime.now(timezone.utc), until_date)
+            try:
+                until_date = datetime.now(timezone.utc) + timedelta(
+                    seconds=self.parse_duration(time_duration)
+                )
+            except:
+                await update.message.reply_text(f"Invalid duration format: {time_duration}")
+                return
             log = {
                 "user_id": user.id,
                 "chat_id": update.effective_chat.id,
@@ -85,9 +89,9 @@ class Admin:
             await self.logs.awrite(FirebaseAction.BAN, dumps(log))
             await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=user.id, until_date=until_date,
                                               revoke_messages=False)
-            await update.message.delete()
             await update.message.reply_text(f"{user.first_name} был заблокирован на {time_duration}.\n"
                                             f"Причина: {reason}.")
+            await update.message.delete()
             return
         else:  #TODO: Временный бан пользователя по его никнейму
             if len(context.args) != 3:
@@ -114,18 +118,16 @@ class Admin:
                                                )
 
     def parse_duration(self, s: str):
-        match = re.match(r"(\d+)([smhd])", s)
+        match = re.match(r"(\d+)([mhd])", s)
         if not match:
             return None
 
         value, unit = match.groups()
         value = int(value)
-        if unit == "s":
-            return value
-        elif unit == "m":
+        if unit == "m":
             return value * 60
         elif unit == "h":
             return value * 60 * 60
         elif unit == "d":
             return value * 60 * 60 * 24
-        raise TelegramError(f"Invalid duration format: {s}")
+        return None
