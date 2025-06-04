@@ -4,6 +4,8 @@ import logging
 
 from telegram import Update
 from telegram.ext import Application
+import firebase_admin
+from firebase_admin import credentials
 
 from bot import Bot
 from services import LLMService, ConsoleLog, FirebaseLog
@@ -16,7 +18,10 @@ def main() -> None:
     console_log.set_name("httpx").set_level(logging.WARNING)
     console_log.set_name(__name__)
 
-    firebase_log = FirebaseLog(firebase_url=os.getenv("FIREBASE_DB_URL"), secret=os.getenv("FIREBASE_DB_SECRET"))
+    cred = credentials.Certificate(os.getenv("FIREBASE_DB_SECRET"))
+    firebase_admin.initialize_app(cred, {"databaseURL": os.getenv("FIREBASE_DB_URL")})
+
+    firebase_log = FirebaseLog()
 
     llm_service = LLMService()
 

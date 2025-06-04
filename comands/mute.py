@@ -1,20 +1,21 @@
 from datetime import datetime, timezone, timedelta
 import re
-from typing import Self
+from typing import Self, Optional
 from enum import Enum
 from json import dumps
 
-from telegram import Update, ChatPermissions
+from telegram import Update, ChatPermissions, ChatMember, ChatMemberRestricted
 from telegram.ext import ContextTypes
 
 from services import Log
 from services.log import FirebaseAction
+from storage import Permissions
 
 
 class Additions(Enum):
     DELETE = "DELETE"
     SILENT = "SILENT"
-    TIMER= "TIMER"
+    TIMER = "TIMER"
 
 
 # TODO: ТУТ ЯВНОЕ ПОВТОРЕНИЕ КОДА. НУЖНО СДЕЛАТЬ ОБЩИЙ ИНТЕРФЕЙС КОМАНД И КОМПОЗИЦИЮ
@@ -39,6 +40,7 @@ class Mute:
         self.adds: set[Additions] = set()
         self.invert: bool = False
         self.logs = logs
+        self.permissions: Permissions = Permissions()
 
     def with_delete(self) -> Self:
         """
@@ -69,18 +71,34 @@ class Mute:
         self.invert = not self.invert
         return self
 
+    def chat_permissions(self, user: ChatMember) -> ChatPermissions:
+        if isinstance(user, ChatMemberRestricted):
+            data = user.to_dict()
+            return ChatPermissions(
+                can_send_messages = data["can_send_messages"],
+                can_send_polls = data["can_send_polls"],
+                can_send_other_messages = data["can_send_other_messages"],
+                can_add_web_page_previews = data["can_add_web_page_previews"],
+                can_change_info = data["can_change_info"],
+                can_invite_users = data["can_invite_users"],
+                can_pin_messages = data["can_pin_messages"],
+                can_manage_topics = data["can_manage_topics"],
+                can_send_audios = data["can_send_audios"],
+                can_send_documents = data["can_send_documents"],
+                can_send_photos = data["can_send_photos"],
+                can_send_videos = data["can_send_videos"],
+                can_send_video_notes = data["can_send_video_notes"],
+                can_send_voice_notes = data["can_send_voice_notes"],
+            )
+        return ChatPermissions.all_permissions()
+
+    def is_muted(self, permissions: ChatPermissions) -> bool:
+        return permissions == ChatPermissions.no_permissions()
+
     async def __call__(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        # TODO: Добавить причину для мьюта
-        log = {
-            "user_id": update.message.reply_to_message.from_user.id,
-            "chat_id": update.effective_chat.id,
-            "message": update.message.reply_to_message.text,
-            "reason": "",
-        }
-        if not self.invert:
-            await self.logs.awrite(FirebaseAction.MUTE, dumps(log))
-        else:
-            await self.logs.awrite(FirebaseAction.UNMUTE, dumps(log))
+        chat = update.effective_chat
+        user = update.message.reply_to_message.from_user
+        message = update.message.reply_to_message
 
         until_date = None
         if not self.invert and Additions.TIMER in self.adds:
@@ -92,11 +110,27 @@ class Mute:
             except TypeError:
                 return
 
+        member = await context.bot.get_chat_member(chat.id, user.id)
+        if not self.invert and not self.is_muted(self.chat_permissions(member)):
+            self.permissions.set_user_permissions(user.id, self.chat_permissions(member).to_dict())
+            permissions = ChatPermissions.no_permissions()
+        elif not self.invert:
+            return
+        if self.invert and self.is_muted(self.chat_permissions(member)):
+            try:
+                permissions = ChatPermissions.de_json(self.permissions.user_permissions(user.id))
+            except Exception as e:
+                print(e)
+                permissions = ChatPermissions.all_permissions()
+        elif self.invert:
+            return
+
+
         # TODO: Нужно давать юзеру не все права, а только те, которые у него были
         await context.bot.restrict_chat_member(
             chat_id=update.effective_chat.id,
             user_id=update.message.reply_to_message.from_user.id,
-            permissions=ChatPermissions.no_permissions() if not self.invert else ChatPermissions.all_permissions(),
+            permissions=permissions,
             until_date=until_date if not self.invert else None,
         )
 
@@ -108,7 +142,19 @@ class Mute:
 
         if not self.invert:
             await context.bot.send_message(update.effective_chat.id,
-                                       f"Пользователь @{update.message.reply_to_message.from_user.username} в мьюте 🤫")
+                                           f"Пользователь @{update.message.reply_to_message.from_user.username} в мьюте 🤫")
         else:
             await context.bot.send_message(update.effective_chat.id,
                                            f"Пользователь @{update.message.reply_to_message.from_user.username} разговаривает! 🥳")
+
+        # TODO: Добавить причину для мьюта
+        log = {
+            "user_id": user.id,
+            "chat_id": chat.id,
+            "message": message.text,
+            "reason": "",
+        }
+        if not self.invert:
+            await self.logs.awrite(FirebaseAction.MUTE, dumps(log))
+        else:
+            await self.logs.awrite(FirebaseAction.UNMUTE, dumps(log))
