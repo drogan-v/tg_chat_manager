@@ -23,6 +23,9 @@ def main() -> None:
     app = Application.builder().token(os.getenv("TOKEN")).build()
 
     bot = Bot(llm_service=llm_service, firebase_log=firebase_log, console_log=console_log)
+
+    app.add_error_handler(bot.error_handler)
+
     for handler in bot.handlers():
         app.add_handler(handler)
 

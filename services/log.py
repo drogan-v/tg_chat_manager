@@ -2,7 +2,6 @@ import logging
 import uuid
 from abc import abstractmethod
 from typing import Protocol, Any, Self
-from os import PathLike
 from enum import Enum
 
 import firebase_admin

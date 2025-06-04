@@ -7,7 +7,7 @@ from telegram.ext import CommandHandler
 
 from services import LLMService, ConsoleLog, FirebaseLog
 from handlers import Admin
-
+from handlers.error import UserIsAdminError
 
 class Bot:
     def __init__(self, llm_service: LLMService, firebase_log: FirebaseLog, console_log: ConsoleLog) -> None:
@@ -19,7 +19,7 @@ class Bot:
     def handlers(self) -> list[BaseHandler]:
         return [
             CommandHandler("help", self.help_command),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
+            MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.ChatType.PRIVATE, self.validate),
             *self.admin.handlers(),
         ]
 
@@ -30,14 +30,20 @@ class Bot:
     async def validate(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Validate the message sent by the user."""
         status, reason = await self.llm_service.validate_message(update.message.text)
+        msg = update.message
         if 'unsafe' in status:
+            await update.message.delete()
             try:
-                await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
-                await update.message.delete()
-                await context.bot.send_message(chat_id=update.message.from_user.id,
+                await context.bot.ban_chat_member(chat_id=msg.chat_id, user_id=msg.from_user.id)
+                await context.bot.send_message(chat_id=msg.from_user.id,
                                                text=f'Вы были забанены за сообщение: '
                                                     f'{update.message.text}\nПричина: {reason}')
             except TelegramError:
-                await self.console_logs.awrite(status=logging.WARNING,
-                                               msg=f'Не удалось забанить пользователя {update.message.from_user.username}, '
-                                                   f'т.к. он является администратором чата.')
+                raise UserIsAdminError(f'Не удалось заблокировать пользователя {msg.from_user.username}, т.к. он является администратором чата.')
+
+    async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Log the error and send a telegram message to notify the developer."""
+        if isinstance(update, Update) and update.message:
+            await self.console_logs.awrite(status=logging.ERROR, msg=f'Message "{update.message.text}" caused error: {context.error}')
+            if not isinstance(context.error, UserIsAdminError):
+                await update.message.reply_text(text=str(context.error))

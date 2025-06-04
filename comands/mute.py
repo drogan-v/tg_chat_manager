@@ -9,29 +9,13 @@ from telegram.ext import ContextTypes
 
 from services import FirebaseLog, ConsoleLog
 from services.log import FirebaseAction
-
+from .utils import parse_duration
+from handlers.error import UserNotRepliedError, MissingDurationError
 
 class Additions(Enum):
     DELETE = "DELETE"
     SILENT = "SILENT"
     TIMER= "TIMER"
-
-
-# TODO: ТУТ ЯВНОЕ ПОВТОРЕНИЕ КОДА. НУЖНО СДЕЛАТЬ ОБЩИЙ ИНТЕРФЕЙС КОМАНД И КОМПОЗИЦИЮ
-def parse_duration(s: str):
-    match = re.match(r"(\d+)([mhd])", s)
-    if not match:
-        raise TypeError("Invalid duration")
-
-    value, unit = match.groups()
-    value = int(value)
-    if unit == "m":
-        return value * 60
-    elif unit == "h":
-        return value * 60 * 60
-    elif unit == "d":
-        return value * 60 * 60 * 24
-    raise TypeError("Invalid duration")
 
 
 class Mute:
@@ -72,12 +56,16 @@ class Mute:
 
     async def __call__(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         # TODO: Добавить причину для мьюта
-        log = {
-            "user_id": update.message.reply_to_message.from_user.id,
-            "chat_id": update.effective_chat.id,
-            "message": update.message.reply_to_message.text,
-            "reason": "",
-        }
+        try:
+            log = {
+                "user_id": update.message.reply_to_message.from_user.id,
+                "chat_id": update.effective_chat.id,
+                "message": update.message.reply_to_message.text,
+                "reason": "",
+            }
+        except AttributeError:
+            raise UserNotRepliedError("Не указан пользователь — Необходимо ответить на сообщение пользователя.")
+
         if not self.invert:
             await self.firebase_logs.awrite(FirebaseAction.MUTE, dumps(log))
         else:
@@ -89,9 +77,7 @@ class Mute:
                 duration = parse_duration(context.args[0])
                 until_date = datetime.now(timezone.utc) + timedelta(seconds=duration)
             except IndexError:
-                return
-            except TypeError:
-                return
+                raise MissingDurationError(f"Не указано время для бана")
 
         # TODO: Нужно давать юзеру не все права, а только те, которые у него были
         await context.bot.restrict_chat_member(

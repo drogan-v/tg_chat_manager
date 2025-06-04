@@ -11,34 +11,31 @@ class Admin:
         self.firebase_logs = firebase_log
         self.console_logs = console_log.with_name(__name__)
         self.command_filter = ~filters.ChatType.PRIVATE & filters.COMMAND
-        self.kick = Kick(console_log=self.console_logs)
-        self.ban = Ban(firebase_log=self.firebase_logs, console_log=self.console_logs)
-        self.mute = Mute(firebase_log=self.firebase_logs, console_log=self.console_logs)
 
     def handlers(self) -> list:
         return [
-            CommandHandler("kick", self.kick, filters=~filters.ChatType.PRIVATE & filters.COMMAND),
-            CommandHandler("dkick", self.kick.with_delete(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
-            CommandHandler("skick", self.kick.with_silent(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
-            CommandHandler("sdkick", self.kick.with_silent().with_delete(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("kick", Kick(console_log=self.console_logs), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("dkick", Kick(console_log=self.console_logs).with_delete(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("skick", Kick(console_log=self.console_logs).with_silent(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
+            CommandHandler("sdkick", Kick(console_log=self.console_logs).with_silent().with_delete(), filters=~filters.ChatType.PRIVATE & filters.COMMAND),
 
-            CommandHandler("ban", self.ban, filters=self.command_filter),
-            CommandHandler("dban", self.ban.with_delete(), filters=self.command_filter),
-            CommandHandler("sban", self.ban.with_silent(), filters=self.command_filter),
-            CommandHandler("sdban", self.ban.with_delete().with_silent(), filters=self.command_filter),
-            CommandHandler("tban", self.ban.with_timer(), filters=self.command_filter),
-            CommandHandler("tdban", self.ban.with_timer().with_delete(), filters=self.command_filter),
-            CommandHandler("tsdban", self.ban.with_timer().with_delete().with_silent(), filters=self.command_filter),
-            CommandHandler("unban", self.ban.with_invert(), filters=self.command_filter),
+            CommandHandler("ban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs), filters=self.command_filter),
+            CommandHandler("dban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs).with_delete(), filters=self.command_filter),
+            CommandHandler("sban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs).with_silent(), filters=self.command_filter),
+            CommandHandler("sdban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs).with_delete().with_silent(), filters=self.command_filter),
+            CommandHandler("tban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs).with_timer(), filters=self.command_filter),
+            CommandHandler("tdban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs).with_timer().with_delete(), filters=self.command_filter),
+            CommandHandler("tsdban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs).with_timer().with_delete().with_silent(), filters=self.command_filter),
+            CommandHandler("unban", Ban(firebase_log=self.firebase_logs, console_log=self.console_logs).with_invert(), filters=self.command_filter),
 
-            CommandHandler("mute", self.mute, filters=self.command_filter),
-            CommandHandler("dmute", self.mute.with_delete(), filters=self.command_filter),
-            CommandHandler("smute", self.mute.with_silent(), filters=self.command_filter),
-            CommandHandler("sdmute", self.mute.with_delete().with_silent(), filters=self.command_filter),
-            CommandHandler("tmute", self.mute.with_timer(), filters=self.command_filter),
-            CommandHandler("tdmute", self.mute.with_timer().with_delete(), filters=self.command_filter),
-            CommandHandler("tsdmute", self.mute.with_timer().with_delete().with_silent(), filters=self.command_filter),
-            CommandHandler("unmute", self.mute.with_invert(), filters=self.command_filter),
+            CommandHandler("mute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs), filters=self.command_filter),
+            CommandHandler("dmute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs).with_delete(), filters=self.command_filter),
+            CommandHandler("smute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs).with_silent(), filters=self.command_filter),
+            CommandHandler("sdmute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs).with_delete().with_silent(), filters=self.command_filter),
+            CommandHandler("tmute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs).with_timer(), filters=self.command_filter),
+            CommandHandler("tdmute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs).with_timer().with_delete(), filters=self.command_filter),
+            CommandHandler("tsdmute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs).with_timer().with_delete().with_silent(), filters=self.command_filter),
+            CommandHandler("unmute", Mute(firebase_log=self.firebase_logs, console_log=self.console_logs).with_invert(), filters=self.command_filter),
         ]
 
     async def is_admin(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

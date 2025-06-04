@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from services import ConsoleLog
+from handlers.error import UserNotRepliedError
 
 
 class Additions(Enum):
@@ -33,15 +34,18 @@ class Kick:
         return self
 
     async def __call__(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        await context.bot.ban_chat_member(
-            chat_id=update.effective_chat.id,
-            user_id=update.message.reply_to_message.from_user.id,
-            revoke_messages=True if Additions.DELETE in self.adds else False
-        )
-        await context.bot.unban_chat_member(
-            chat_id=update.effective_chat.id,
-            user_id=update.message.reply_to_message.from_user.id,
-        )
+        try:
+            await context.bot.ban_chat_member(
+                chat_id=update.effective_chat.id,
+                user_id=update.message.reply_to_message.from_user.id,
+                revoke_messages=True if Additions.DELETE in self.adds else False
+            )
+            await context.bot.unban_chat_member(
+                chat_id=update.effective_chat.id,
+                user_id=update.message.reply_to_message.from_user.id,
+            )
+        except AttributeError:
+            raise UserNotRepliedError("Не указан пользователь — Необходимо ответить на сообщение пользователя.")
 
         if Additions.SILENT in self.adds:
             return
