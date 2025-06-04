@@ -7,7 +7,7 @@ from json import dumps
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from services import Log
+from services import FirebaseLog, ConsoleLog
 from services.log import FirebaseAction
 
 
@@ -35,11 +35,11 @@ def parse_duration(s: str):
 
 
 class Ban:
-    def __init__(self, firebase_log: Log, console_log: Log) -> None:
+    def __init__(self, firebase_log: FirebaseLog, console_log: ConsoleLog) -> None:
         self.adds: set[Additions] = set()
         self.invert: bool = False
         self.firebase_logs = firebase_log
-        self.console_logs = console_log
+        self.console_logs = console_log.set_name(__name__)
 
     def with_delete(self) -> Self:
         """

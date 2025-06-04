@@ -18,7 +18,7 @@ def main() -> None:
 
     firebase_log = FirebaseLog(firebase_url=os.getenv("FIREBASE_DB_URL"), secret=os.getenv("FIREBASE_DB_SECRET"))
 
-    llm_service = LLMService()
+    llm_service = LLMService(console_log=console_log)
 
     app = Application.builder().token(os.getenv("TOKEN")).build()
 

@@ -3,7 +3,7 @@ from enum import Enum
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from services import Log
+from services import ConsoleLog
 
 
 class Additions(Enum):
@@ -12,9 +12,9 @@ class Additions(Enum):
 
 
 class Kick:
-    def __init__(self, console_log: Log) -> None:
+    def __init__(self, console_log: ConsoleLog) -> None:
         self.adds: set[Additions] = set()
-        self.console_logs = console_log
+        self.console_logs = console_log.set_name(__name__)
 
     def with_delete(self) -> Self:
         """

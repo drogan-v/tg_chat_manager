@@ -15,6 +15,11 @@ from pydantic import BaseModel
 class Log(Protocol):
     @abstractmethod
     async def awrite(self, status: Any, msg: Any) -> None:
+        """Async write log message."""
+        pass
+
+    @abstractmethod
+    def write(self, status: Any, msg: Any) -> None:
         """Write log message."""
         pass
 
@@ -37,7 +42,7 @@ class FirebaseLogFormat(BaseModel):
 class FirebaseLog(Log):
     """Firebase Realtime DB Logs."""
 
-    def __init__(self, firebase_url: str, secret: PathLike[str]) -> None:
+    def __init__(self, firebase_url: str, secret: str) -> None:
         """
         firebase_url: Firebase Runtime DB URL.
         secret: Firebase Runtime DB secret.
@@ -138,6 +143,22 @@ class ConsoleLog(Log):
 
     async def awrite(self, status: Any, msg: Any) -> None:
         """Write log message in console."""
+        match status:
+            case logging.INFO:
+                self.logger.info(msg)
+            case logging.WARNING:
+                self.logger.warning(msg)
+            case logging.ERROR:
+                self.logger.error(msg)
+            case logging.CRITICAL:
+                self.logger.critical(msg)
+            case logging.NOTSET:
+                self.logger.debug(msg)
+            case _:
+                raise RuntimeError(f"Unexpected Console Log Format: {status}")
+
+    def write(self, status: Any, msg: Any) -> None:
+        """Async write log message in console."""
         match status:
             case logging.INFO:
                 self.logger.info(msg)

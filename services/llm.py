@@ -4,20 +4,21 @@ import logging
 import dotenv
 import os
 
-logger = logging.getLogger(__name__)
+from services.log import ConsoleLog
 
 class LLMService:
-    def __init__(self) -> None:
+    def __init__(self, console_log: ConsoleLog) -> None:
+        dotenv.load_dotenv()
+        self.console_logs = console_log.set_name(__name__)
         try:
-            dotenv.load_dotenv()
             self.client = Together(api_key=os.getenv('LLM_API_KEY'))
-            logger.info("LLM initialized successfully")
+            self.console_logs.write(status=logging.INFO, msg="LLM initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize LLm: {e}")
-            raise
+            self.console_logs.write(status=logging.ERROR, msg=f"LLM initialization failed: {e}")
+            raise RuntimeError(f"LLM initialization failed: {e}") from e
 
     def validate_message(self, message: str) -> (str, str):
-        logger.info(f"НАЧАЛИ")
+        self.console_logs.write(status=logging.INFO, msg="Validating message...")
         response = self.client.chat.completions.create(
             model="lgai/exaone-3-5-32b-instruct",
             messages=[
@@ -44,8 +45,7 @@ class LLMService:
             ],
         )
         llm_response = response.choices[0].message.content
-        logger.info(f"LLM response: {llm_response}")
+        self.console_logs.write(status=logging.INFO, msg=f"LLM response: {llm_response}")
         parsed_response = llm_response.split()
         status, reason = parsed_response[0], ' '.join(parsed_response[1:])
-        logger.info(f"ЗАКОНЧИЛИ")
         return status, reason

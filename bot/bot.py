@@ -3,17 +3,17 @@ import logging
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes, BaseHandler
-from telegram.ext import CommandHandler, filters, MessageHandler
+from telegram.ext import CommandHandler
 
-from services import LLMService, Log
+from services import LLMService, ConsoleLog, FirebaseLog
 from handlers import Admin
 
 
 class Bot:
-    def __init__(self, llm_service: LLMService, firebase_log: Log, console_log: Log) -> None:
+    def __init__(self, llm_service: LLMService, firebase_log: FirebaseLog, console_log: ConsoleLog) -> None:
         self.llm_service = llm_service
         self.firebase_logs = firebase_log
-        self.console_logs = console_log
+        self.console_logs = console_log.set_name(__name__)
         self.admin = Admin(firebase_log=firebase_log, console_log=console_log)
 
     def handlers(self) -> list[BaseHandler]:
@@ -38,5 +38,6 @@ class Bot:
             try:
                 await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
             except TelegramError:
-                # Значит, типок является админом
-                pass
+                await self.console_logs.awrite(status=logging.WARNING,
+                                               msg=f'Не удалось забанить пользователя {update.message.from_user.username}, '
+                                                   f'т.к. он является администратором чата.')
