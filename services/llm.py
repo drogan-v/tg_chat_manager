@@ -1,4 +1,4 @@
-from together import Together
+from together import AsyncTogether
 
 import logging
 import dotenv
@@ -9,17 +9,17 @@ from services.log import ConsoleLog
 class LLMService:
     def __init__(self, console_log: ConsoleLog) -> None:
         dotenv.load_dotenv()
-        self.console_logs = console_log.set_name(__name__)
+        self.console_logs = console_log.with_name(__name__)
         try:
-            self.client = Together(api_key=os.getenv('LLM_API_KEY'))
+            self.client = AsyncTogether(api_key=os.getenv('LLM_API_KEY'))
             self.console_logs.write(status=logging.INFO, msg="LLM initialized successfully")
         except Exception as e:
             self.console_logs.write(status=logging.ERROR, msg=f"LLM initialization failed: {e}")
             raise RuntimeError(f"LLM initialization failed: {e}") from e
 
-    def validate_message(self, message: str) -> (str, str):
+    async def validate_message(self, message: str) -> (str, str):
         self.console_logs.write(status=logging.INFO, msg="Validating message...")
-        response = self.client.chat.completions.create(
+        response = await self.client.chat.completions.create(
             model="lgai/exaone-3-5-32b-instruct",
             messages=[
                 {
@@ -45,7 +45,7 @@ class LLMService:
             ],
         )
         llm_response = response.choices[0].message.content
-        self.console_logs.write(status=logging.INFO, msg=f"LLM response: {llm_response}")
+        await self.console_logs.awrite(status=logging.INFO, msg=f"LLM response: {llm_response}")
         parsed_response = llm_response.split()
         status, reason = parsed_response[0], ' '.join(parsed_response[1:])
         return status, reason

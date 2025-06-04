@@ -9,7 +9,7 @@ from comands import Mute, Ban, Kick
 class Admin:
     def __init__(self, firebase_log: FirebaseLog, console_log: ConsoleLog) -> None:
         self.firebase_logs = firebase_log
-        self.console_logs = console_log.set_name(__name__)
+        self.console_logs = console_log.with_name(__name__)
         self.command_filter = ~filters.ChatType.PRIVATE & filters.COMMAND
         self.kick = Kick(console_log=self.console_logs)
         self.ban = Ban(firebase_log=self.firebase_logs, console_log=self.console_logs)

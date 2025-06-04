@@ -39,7 +39,7 @@ class Mute:
         self.adds: set[Additions] = set()
         self.invert: bool = False
         self.firebase_logs = firebase_log
-        self.console_logs = console_log.set_name(__name__)
+        self.console_logs = console_log.with_name(__name__)
 
     def with_delete(self) -> Self:
         """

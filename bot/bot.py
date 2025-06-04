@@ -2,7 +2,7 @@ import logging
 
 from telegram import Update
 from telegram.error import TelegramError
-from telegram.ext import ContextTypes, BaseHandler
+from telegram.ext import ContextTypes, BaseHandler, MessageHandler, filters
 from telegram.ext import CommandHandler
 
 from services import LLMService, ConsoleLog, FirebaseLog
@@ -13,14 +13,13 @@ class Bot:
     def __init__(self, llm_service: LLMService, firebase_log: FirebaseLog, console_log: ConsoleLog) -> None:
         self.llm_service = llm_service
         self.firebase_logs = firebase_log
-        self.console_logs = console_log.set_name(__name__)
+        self.console_logs = console_log.with_name(__name__)
         self.admin = Admin(firebase_log=firebase_log, console_log=console_log)
 
     def handlers(self) -> list[BaseHandler]:
         return [
             CommandHandler("help", self.help_command),
-            # TODO: Решить проблему с беспконечным запросом в ллм из-за которого вся программа стопится
-            # MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, self.validate),
             *self.admin.handlers(),
         ]
 
@@ -30,13 +29,14 @@ class Bot:
 
     async def validate(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Validate the message sent by the user."""
-        status, reason = self.llm_service.validate_message(update.message.text)
+        status, reason = await self.llm_service.validate_message(update.message.text)
         if 'unsafe' in status:
-            await update.message.delete()
-            await context.bot.send_message(chat_id=update.message.from_user.id, text=f'Вы были забанены за сообщение: '
-                                                                                     f'{update.message.text}\nПричина: {reason}')
             try:
                 await context.bot.ban_chat_member(chat_id=update.message.chat_id, user_id=update.message.from_user.id)
+                await update.message.delete()
+                await context.bot.send_message(chat_id=update.message.from_user.id,
+                                               text=f'Вы были забанены за сообщение: '
+                                                    f'{update.message.text}\nПричина: {reason}')
             except TelegramError:
                 await self.console_logs.awrite(status=logging.WARNING,
                                                msg=f'Не удалось забанить пользователя {update.message.from_user.username}, '

@@ -123,18 +123,23 @@ class FirebaseLog(Log):
 class ConsoleLog(Log):
     """Console Log."""
 
-    def __init__(self, formater: str, level: int = logging.INFO) -> None:
+    def __init__(self, formater: str, level: int = logging.INFO, name: str = "__main__") -> None:
         """
         formater: format string for log message
         level: log level INFO by default
         """
         logging.basicConfig(format=formater, level=level)
-        self.logger = logging.getLogger("console")
+        self.formater = formater
+        self.logger = logging.getLogger(name)
 
     def set_name(self, name: str) -> Self:
         """alias for logging.getLogger(name)"""
         self.logger = logging.getLogger(name)
         return self
+
+    def with_name(self, name: str) -> Self:
+        """Creates a new instance of ConsoleLog with a different logger name."""
+        return ConsoleLog(formater=self.formater, level=self.logger.level, name=name)
 
     def set_level(self, level: int) -> Self:
         """alias for logging.setLevel(level)"""
