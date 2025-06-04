@@ -35,10 +35,11 @@ def parse_duration(s: str):
 
 
 class Ban:
-    def __init__(self, logs: Log) -> None:
+    def __init__(self, firebase_log: Log, console_log: Log) -> None:
         self.adds: set[Additions] = set()
         self.invert: bool = False
-        self.logs = logs
+        self.firebase_logs = firebase_log
+        self.console_logs = console_log
 
     def with_delete(self) -> Self:
         """
@@ -78,9 +79,9 @@ class Ban:
             "reason": "",
         }
         if not self.invert:
-            await self.logs.awrite(FirebaseAction.BAN, dumps(log))
+            await self.firebase_logs.awrite(FirebaseAction.BAN, dumps(log))
         else:
-            await self.logs.awrite(FirebaseAction.UNBAN, dumps(log))
+            await self.firebase_logs.awrite(FirebaseAction.UNBAN, dumps(log))
 
         until_date = None
         if not self.invert and Additions.TIMER in self.adds:

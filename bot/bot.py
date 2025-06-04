@@ -1,3 +1,5 @@
+import logging
+
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes, BaseHandler
@@ -8,10 +10,11 @@ from handlers import Admin
 
 
 class Bot:
-    def __init__(self, llm_service: LLMService, logs: Log) -> None:
+    def __init__(self, llm_service: LLMService, firebase_log: Log, console_log: Log) -> None:
         self.llm_service = llm_service
-        self.logs = logs
-        self.admin = Admin(logs)
+        self.firebase_logs = firebase_log
+        self.console_logs = console_log
+        self.admin = Admin(firebase_log=firebase_log, console_log=console_log)
 
     def handlers(self) -> list[BaseHandler]:
         return [

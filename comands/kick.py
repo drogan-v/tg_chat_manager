@@ -12,8 +12,9 @@ class Additions(Enum):
 
 
 class Kick:
-    def __init__(self) -> None:
+    def __init__(self, console_log: Log) -> None:
         self.adds: set[Additions] = set()
+        self.console_logs = console_log
 
     def with_delete(self) -> Self:
         """
